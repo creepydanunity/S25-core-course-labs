@@ -1,0 +1,57 @@
+replicaCount: 3
+
+image:
+  repository: iucd/fastapi-mt
+  pullPolicy: IfNotPresent
+  tag: latest
+
+serviceAccount:
+  create: true
+  automount: true
+  name: "internal-app"
+
+podAnnotations:
+  vault.hashicorp.com/agent-inject: "true"
+  vault.hashicorp.com/role: "internal-app"
+  vault.hashicorp.com/agent-inject-secret-database-config.txt: 'internal/data/database/config'
+
+service:
+  type: ClusterIP
+  port: 8000
+
+ingress:
+  enabled: enable
+  className: "nginx"
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+  hosts:
+    - host: lab9.bonus
+      paths:
+        - path: /fastapi
+          pathType: Prefix
+
+resources:
+  requests:
+    cpu: "250m"
+    memory: "128Mi"
+  limits:
+    cpu: "500m"
+    memory: "256Mi"
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+
+volumes:
+  - name: config-volume
+    configMap:
+      name: test-config
+
+volumeMounts:
+  - name: config-volume
+    mountPath: /config.json
+    subPath: config.json
+
+testSecret: testpassword
